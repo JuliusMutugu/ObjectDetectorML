@@ -1,0 +1,60 @@
+# Color Classification Configuration
+
+# HSV color ranges for different colors
+# Format: [H_min, S_min, V_min, H_max, S_max, V_max]
+colors:
+  red:
+    primary_range: [0, 50, 50, 10, 255, 255]
+    secondary_range: [170, 50, 50, 180, 255, 255]  # Red wraps around in HSV
+    rgb: [255, 0, 0]
+    
+  orange:
+    range: [11, 50, 50, 25, 255, 255]
+    rgb: [255, 165, 0]
+    
+  yellow:
+    range: [26, 50, 50, 35, 255, 255]
+    rgb: [255, 255, 0]
+    
+  green:
+    range: [36, 50, 50, 85, 255, 255]
+    rgb: [0, 255, 0]
+    
+  cyan:
+    range: [86, 50, 50, 95, 255, 255]
+    rgb: [0, 255, 255]
+    
+  blue:
+    range: [96, 50, 50, 125, 255, 255]
+    rgb: [0, 0, 255]
+    
+  purple:
+    range: [126, 50, 50, 145, 255, 255]
+    rgb: [128, 0, 128]
+    
+  pink:
+    range: [146, 50, 50, 169, 255, 255]
+    rgb: [255, 192, 203]
+    
+  white:
+    range: [0, 0, 200, 180, 30, 255]
+    rgb: [255, 255, 255]
+    
+  black:
+    range: [0, 0, 0, 180, 255, 50]
+    rgb: [0, 0, 0]
+    
+  gray:
+    range: [0, 0, 51, 180, 30, 199]
+    rgb: [128, 128, 128]
+
+# Color analysis parameters
+analysis:
+  confidence_threshold: 0.1  # Minimum confidence for color detection
+  roi_padding: 5             # Padding around ROI for color analysis
+  
+# Color classification settings
+classification:
+  use_dominant_color: true   # Use dominant color method
+  use_average_color: false   # Use average color method
+  smoothing_factor: 0.8      # Temporal smoothing factor (0-1)

@@ -1,0 +1,22 @@
+[project]
+name = "object-detector"
+version = "0.0.1"
+description = "sample object detector using opencv and python"
+authors = [
+    {name = "Julius_mutugu",email = "ndegwajulius239@gmail.com"}
+]
+license = {text = "Juliunz"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+    "dataclasses-json>=0.5.0",
+    "typing-extensions>=4.0.0"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

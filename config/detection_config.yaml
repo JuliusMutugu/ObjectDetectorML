@@ -1,0 +1,36 @@
+# Object Detection Configuration
+detection:
+  # Contour detection parameters
+  contour:
+    min_area: 500          # Minimum contour area
+    max_area: 50000        # Maximum contour area
+    blur_kernel_size: 5    # Gaussian blur kernel size
+    morph_kernel_size: 5   # Morphological operations kernel size
+  
+  # Image preprocessing parameters
+  preprocessing:
+    bilateral_filter:
+      d: 9                 # Diameter of pixel neighborhood
+      sigma_color: 75      # Filter sigma in color space
+      sigma_space: 75      # Filter sigma in coordinate space
+    
+    adaptive_threshold:
+      max_value: 255       # Maximum value assigned to pixel
+      block_size: 11       # Size of neighborhood area
+      c: 2                 # Constant subtracted from mean
+
+# Camera configuration
+camera:
+  index: 0               # Camera index (0 for default camera)
+  width: 640             # Frame width
+  height: 480            # Frame height
+  fps: 30                # Frames per second
+
+# Display configuration
+display:
+  window_name: "Object Color Detector"
+  show_contours: true    # Show object contours
+  show_bounding_boxes: true  # Show bounding boxes
+  show_color_labels: true    # Show color labels
+  font_scale: 0.7        # Text font scale
+  line_thickness: 2      # Line thickness for drawings
