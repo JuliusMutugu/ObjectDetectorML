@@ -5,8 +5,11 @@ a focused color analysis interface.
 """
 from abc import ABC, abstractmethod
 import numpy as np
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List
-from ..models import Color, DetectedObject
+from models import Color, DetectedObject
 
 
 class ColorAnalyzerInterface(ABC):

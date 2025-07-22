@@ -1,0 +1,55 @@
+name: vision_ai_app
+description: Advanced computer vision mobile app with object detection, face tracking, and hand gestures.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Camera and image processing
+  camera: ^0.10.5+5
+  image: ^4.1.3
+  
+  # HTTP and WebSocket
+  http: ^1.1.0
+  dio: ^5.3.3
+  web_socket_channel: ^2.4.0
+  
+  # State management
+  provider: ^6.1.1
+  
+  # UI components
+  cupertino_icons: ^1.0.2
+  flutter_svg: ^2.0.9
+  
+  # Utilities
+  path_provider: ^2.1.1
+  permission_handler: ^11.1.0
+  
+  # JSON handling
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+  
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+        - asset: fonts/Roboto-Bold.ttf
+          weight: 700

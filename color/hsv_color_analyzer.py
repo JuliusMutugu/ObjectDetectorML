@@ -3,10 +3,13 @@ HSV-based color analysis implementation.
 """
 import cv2
 import numpy as np
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Dict, Tuple, List
 from .color_analyzer_interface import ColorAnalyzerInterface
-from ..models import Color, DetectedObject
-from ..processing import ImageProcessor
+from models import Color, DetectedObject
+from processing import ImageProcessor
 
 
 class HSVColorAnalyzer(ColorAnalyzerInterface):

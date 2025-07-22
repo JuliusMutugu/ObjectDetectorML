@@ -92,10 +92,21 @@ class ObjectDetectionApp:
         Returns:
             bool: True if initialization successful, False otherwise
         """
-        # Initialize camera
+        # Try to initialize camera
+        print("Initializing camera...")
         if not self.camera.initialize():
-            print("Failed to initialize camera")
+            print("⚠️  Failed to initialize camera.")
+            print("This could be because:")
+            print("  - No camera is connected")
+            print("  - Camera is being used by another application")
+            print("  - Camera drivers are not installed")
+            print("\n🔧 Troubleshooting:")
+            print("  - Connect a camera and try again")
+            print("  - Close other applications using the camera")
+            print("  - Try different camera index in config/detection_config.yaml")
             return False
+        
+        print("✅ Camera initialized successfully!")
         
         # Configure detector parameters
         detector_config = self.detection_config.get('detection', {}).get('contour', {})

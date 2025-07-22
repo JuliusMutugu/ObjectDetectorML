@@ -3,10 +3,13 @@ Contour-based object detection implementation.
 """
 import cv2
 import numpy as np
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List, Tuple
 from .detector_interface import DetectorInterface
-from ..models import DetectedObject, BoundingBox
-from ..processing import ImageProcessor
+from models import DetectedObject, BoundingBox
+from processing import ImageProcessor
 
 
 class ContourDetector(DetectorInterface):
@@ -102,26 +105,23 @@ class ContourDetector(DetectorInterface):
         Returns:
             np.ndarray: Preprocessed image
         """
-        # Apply bilateral filter to reduce noise while preserving edges
-        filtered = self.image_processor.apply_bilateral_filter(image)
+        # Convert to grayscale first
+        gray = self.image_processor.convert_to_gray(image)
         
-        # Convert to grayscale
-        gray = self.image_processor.convert_to_gray(filtered)
-        
-        # Apply Gaussian blur
+        # Apply Gaussian blur to reduce noise
         blurred = self.image_processor.apply_gaussian_blur(gray, self.blur_kernel_size)
         
-        # Apply adaptive threshold
-        threshold = cv2.adaptiveThreshold(
-            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-        )
+        # Use Canny edge detection instead of adaptive threshold for better results
+        edges = cv2.Canny(blurred, 50, 150)
         
-        # Apply morphological operations to clean up the image
-        morphed = self.image_processor.apply_morphological_operations(
-            threshold, 'opening', self.morph_kernel_size
-        )
+        # Apply morphological operations to close gaps
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_kernel_size, self.morph_kernel_size))
+        closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
         
-        return morphed
+        # Fill holes
+        filled = cv2.morphologyEx(closed, cv2.MORPH_CLOSE, kernel, iterations=2)
+        
+        return filled
     
     def _find_contours(self, processed_image: np.ndarray) -> List[np.ndarray]:
         """

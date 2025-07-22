@@ -6,7 +6,10 @@ a focused detection interface.
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List
-from ..models import DetectedObject
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from models import DetectedObject
 
 
 class DetectorInterface(ABC):

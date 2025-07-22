@@ -1,0 +1,32 @@
+# Core API framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Computer Vision
+opencv-python==4.8.1.78
+numpy==1.24.4
+Pillow==10.1.0
+
+# Optional: MediaPipe for advanced hand tracking and face detection
+# Uncomment if you want to install MediaPipe
+# mediapipe==0.10.7
+
+# Image processing
+scikit-image==0.22.0
+
+# WebSocket support
+websockets==12.0
+
+# HTTP client for testing
+httpx==0.25.2
+
+# Configuration
+pyyaml==6.0.1
+
+# Logging
+python-multipart==0.0.6
+
+# Development tools (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
