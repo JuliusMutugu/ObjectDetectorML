@@ -1,0 +1,82 @@
+# Blind Navigation Assistant Configuration
+
+# Object Detection Parameters (optimized for navigation)
+detection:
+  contour:
+    min_area: 300          # Smaller minimum for better object detection
+    max_area: 25000        # Smaller maximum for precise detection
+    blur_kernel_size: 3    # Less blur for sharper detection
+    morph_kernel_size: 3   # Smaller kernel for precise edges
+
+  # Enhanced preprocessing for navigation
+  preprocessing:
+    bilateral_filter:
+      d: 9
+      sigma_color: 75
+      sigma_space: 75
+    
+    adaptive_threshold:
+      max_value: 255
+      block_size: 11
+      c: 2
+
+# Camera configuration (optimized for navigation)
+camera:
+  index: 0
+  width: 640
+  height: 480
+  fps: 30
+
+# Display configuration (accessibility focused)
+display:
+  window_name: "Blind Navigation Assistant"
+  show_contours: true
+  show_bounding_boxes: true
+  show_color_labels: true
+  show_shape_labels: true
+  show_zones: true           # Show navigation zones
+  show_navigation_info: true # Show navigation information
+  large_text: true          # Use larger text for visibility
+  font_scale: 0.8           # Larger font for accessibility
+  line_thickness: 3         # Thicker lines for better visibility
+
+# Navigation-specific settings
+navigation:
+  # Audio feedback settings
+  audio:
+    announcement_cooldown: 3.0    # Seconds between same announcements
+    speech_rate: 180              # Words per minute
+    volume: 0.9                   # Volume level (0.0 to 1.0)
+    
+  # Zone configuration
+  zones:
+    immediate_priority: "critical"  # Priority for immediate zones
+    far_priority: "medium"         # Priority for distant zones
+    
+  # Object categories for navigation
+  object_categories:
+    obstacles: ["chair", "table", "person", "car", "bicycle", "box"]
+    landmarks: ["door", "window", "stairs", "elevator", "sign"]
+    hazards: ["hole", "step", "barrier", "pole", "fire", "water"]
+    
+  # Safety distances (in pixels)
+  safety_distances:
+    critical: 100    # Very close objects
+    warning: 200     # Moderately close objects
+    caution: 300     # Distant but notable objects
+
+# Accessibility features
+accessibility:
+  enable_audio_feedback: true
+  enable_haptic_feedback: false  # For future implementation
+  enable_voice_commands: false   # For future implementation
+  
+  # Visual accessibility
+  high_contrast_mode: true
+  large_text_mode: true
+  color_blind_friendly: true
+  
+  # Audio preferences
+  detailed_descriptions: true    # Provide detailed object descriptions
+  spatial_audio: false          # For future 3D audio implementation
+  emergency_alerts: true        # Priority alerts for hazards

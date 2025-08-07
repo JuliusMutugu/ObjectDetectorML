@@ -2,10 +2,10 @@
 detection:
   # Contour detection parameters
   contour:
-    min_area: 500          # Minimum contour area
-    max_area: 50000        # Maximum contour area
-    blur_kernel_size: 5    # Gaussian blur kernel size
-    morph_kernel_size: 5   # Morphological operations kernel size
+    min_area: 300          # Minimum contour area (reduced for smaller objects)
+    max_area: 25000        # Maximum contour area (reduced for better accuracy)
+    blur_kernel_size: 3    # Gaussian blur kernel size (smaller for sharper detection)
+    morph_kernel_size: 3   # Morphological operations kernel size (smaller for precision)
   
   # Image preprocessing parameters
   preprocessing:
