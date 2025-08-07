@@ -49,8 +49,7 @@ class NavigationAssistant:
         
         # Navigation state
         self.last_announcement_time = {}
-        self.announcement_cooldown = 3.0  # Seconds between same object announcements
-        self.is_speaking = False
+        self.announcement_cooldown = 2.5  # Reduced cooldown for better responsiveness
         self.speech_queue = []
         
         # Object tracking
@@ -76,13 +75,13 @@ class NavigationAssistant:
         self.enable_collision_warning = True
         
     def _configure_tts(self):
-        """Configure text-to-speech engine."""
+        """Configure text-to-speech engine for optimal real-time performance."""
         if self.tts_engine:
             try:
-                # Set speech rate (words per minute) - slower for clarity
-                self.tts_engine.setProperty('rate', 150)
+                # Set speech rate (words per minute) - optimal for navigation
+                self.tts_engine.setProperty('rate', 170)  # Slightly faster for real-time
                 
-                # Set volume (0.0 to 1.0) - louder for better hearing
+                # Set volume (0.0 to 1.0) - maximum for better hearing
                 self.tts_engine.setProperty('volume', 1.0)
                 
                 # Try to set a clear voice
@@ -107,56 +106,96 @@ class NavigationAssistant:
                         self.tts_engine.setProperty('voice', voices[0].id)
                         print(f"✅ Using default voice: {voices[0].name}")
                 
-                # Test the TTS engine
+                # Test the TTS engine with a quick test
                 print("🔊 Testing TTS engine...")
                 self.tts_engine.say("Navigation assistant audio test")
                 self.tts_engine.runAndWait()
                 print("✅ TTS test completed")
+                
+                # Set up TTS engine for real-time use
+                print("🎙️ TTS configured for real-time navigation")
                 
             except Exception as e:
                 print(f"❌ TTS configuration error: {e}")
                 self.tts_engine = None
     
     def _define_safety_zones(self) -> Dict[str, Dict]:
-        """Define safety zones in the camera frame."""
-        return {
-            'immediate_left': {
-                'x_range': (0, self.frame_width // 3),
-                'y_range': (self.frame_height // 2, self.frame_height),
-                'priority': 'high',
-                'description': 'immediate left'
-            },
-            'immediate_center': {
-                'x_range': (self.frame_width // 3, 2 * self.frame_width // 3),
-                'y_range': (self.frame_height // 2, self.frame_height),
-                'priority': 'critical',
-                'description': 'directly ahead'
-            },
-            'immediate_right': {
-                'x_range': (2 * self.frame_width // 3, self.frame_width),
-                'y_range': (self.frame_height // 2, self.frame_height),
-                'priority': 'high',
-                'description': 'immediate right'
-            },
-            'far_left': {
-                'x_range': (0, self.frame_width // 3),
-                'y_range': (0, self.frame_height // 2),
-                'priority': 'medium',
-                'description': 'far left'
-            },
-            'far_center': {
-                'x_range': (self.frame_width // 3, 2 * self.frame_width // 3),
-                'y_range': (0, self.frame_height // 2),
-                'priority': 'medium',
-                'description': 'ahead in distance'
-            },
-            'far_right': {
-                'x_range': (2 * self.frame_width // 3, self.frame_width),
-                'y_range': (0, self.frame_height // 2),
-                'priority': 'medium',
-                'description': 'far right'
-            }
+        """Define enhanced safety zones in the camera frame - 5x3 grid for better accuracy."""
+        zones = {}
+        
+        # Define grid dimensions (5 columns x 3 rows for better precision)
+        cols = 5
+        rows = 3
+        col_width = self.frame_width // cols
+        row_height = self.frame_height // rows
+        
+        # Zone naming and priorities
+        row_names = ['far', 'mid', 'immediate']
+        col_names = ['far_left', 'left', 'center', 'right', 'far_right']
+        
+        # Priority mapping based on distance and position
+        priority_map = {
+            'immediate_center': 'critical',      # Directly ahead and close
+            'immediate_left': 'high',            # Close left
+            'immediate_right': 'high',           # Close right  
+            'mid_center': 'high',                # Ahead at medium distance
+            'immediate_far_left': 'medium',      # Close far left
+            'immediate_far_right': 'medium',     # Close far right
+            'mid_left': 'medium',                # Medium distance left
+            'mid_right': 'medium',               # Medium distance right
+            'mid_far_left': 'low',               # Medium distance far left
+            'mid_far_right': 'low',              # Medium distance far right
+            'far_center': 'medium',              # Far ahead
+            'far_left': 'low',                   # Far left
+            'far_right': 'low',                  # Far right
+            'far_far_left': 'low',               # Far far left
+            'far_far_right': 'low'               # Far far right
         }
+        
+        # Description mapping for natural language
+        description_map = {
+            'immediate_center': 'directly ahead',
+            'immediate_left': 'immediate left',
+            'immediate_right': 'immediate right',
+            'immediate_far_left': 'immediate far left',
+            'immediate_far_right': 'immediate far right',
+            'mid_center': 'ahead at medium distance',
+            'mid_left': 'medium distance left',
+            'mid_right': 'medium distance right',
+            'mid_far_left': 'medium distance far left',
+            'mid_far_right': 'medium distance far right',
+            'far_center': 'far ahead',
+            'far_left': 'far left',
+            'far_right': 'far right',
+            'far_far_left': 'far far left',
+            'far_far_right': 'far far right'
+        }
+        
+        # Generate all zones
+        for row in range(rows):
+            for col in range(cols):
+                # Calculate zone boundaries
+                x_start = col * col_width
+                x_end = (col + 1) * col_width
+                y_start = row * row_height
+                y_end = (row + 1) * row_height
+                
+                # Create zone name
+                zone_name = f"{row_names[row]}_{col_names[col]}"
+                
+                # Get priority and description
+                priority = priority_map.get(zone_name, 'low')
+                description = description_map.get(zone_name, zone_name.replace('_', ' '))
+                
+                zones[zone_name] = {
+                    'x_range': (x_start, x_end),
+                    'y_range': (y_start, y_end),
+                    'priority': priority,
+                    'description': description,
+                    'grid_position': (row, col)  # For easier grid-based analysis
+                }
+        
+        return zones
     
     def analyze_scene(self, detection_result: DetectionResult) -> Dict:
         """
@@ -215,12 +254,27 @@ class NavigationAssistant:
         return zone_objects
     
     def _generate_navigation_advice(self, analysis: Dict) -> List[str]:
-        """Generate navigation advice based on scene analysis."""
+        """Generate enhanced navigation advice based on 5x3 grid analysis."""
         advice = []
         
-        # Check immediate zones first
-        immediate_zones = ['immediate_left', 'immediate_center', 'immediate_right']
-        for zone in immediate_zones:
+        # Priority zones for immediate navigation (bottom row - closest to user)
+        immediate_zones = ['immediate_far_left', 'immediate_left', 'immediate_center', 'immediate_right', 'immediate_far_right']
+        
+        # Check critical center zone first
+        if 'immediate_center' in analysis['objects_by_zone'] and analysis['objects_by_zone']['immediate_center']:
+            objects = analysis['objects_by_zone']['immediate_center']
+            zone_desc = self.zones['immediate_center']['description']
+            
+            if len(objects) == 1:
+                obj = objects[0]
+                color = obj.color.name if obj.color else 'unknown color'
+                shape = obj.shape.name if obj.shape else 'object'
+                advice.append(f"{color} {shape} {zone_desc}")
+            else:
+                advice.append(f"{len(objects)} objects {zone_desc}")
+        
+        # Check immediate side zones
+        for zone in ['immediate_left', 'immediate_right', 'immediate_far_left', 'immediate_far_right']:
             if zone in analysis['objects_by_zone'] and analysis['objects_by_zone'][zone]:
                 objects = analysis['objects_by_zone'][zone]
                 zone_desc = self.zones[zone]['description']
@@ -230,37 +284,107 @@ class NavigationAssistant:
                     color = obj.color.name if obj.color else 'unknown color'
                     shape = obj.shape.name if obj.shape else 'object'
                     advice.append(f"{color} {shape} {zone_desc}")
-                else:
+                elif len(objects) > 1:
                     advice.append(f"{len(objects)} objects {zone_desc}")
         
-        # Path guidance
+        # Enhanced path guidance with more precision
         clear_zones = []
+        blocked_zones = []
+        
         for zone in immediate_zones:
             if zone not in analysis['objects_by_zone'] or not analysis['objects_by_zone'][zone]:
-                clear_zones.append(zone.replace('immediate_', ''))
+                clear_zones.append(zone)
+            else:
+                blocked_zones.append(zone)
         
+        # Generate sophisticated movement advice
         if clear_zones:
-            if 'center' in clear_zones:
-                advice.append("Path ahead is clear")
-            elif 'left' in clear_zones:
-                advice.append("Move left to avoid obstacles")
-            elif 'right' in clear_zones:
-                advice.append("Move right to avoid obstacles")
+            if 'immediate_center' in clear_zones:
+                # Check if sides are also clear for "straight ahead" advice
+                if 'immediate_left' in clear_zones and 'immediate_right' in clear_zones:
+                    advice.append("Path ahead is clear")
+                else:
+                    advice.append("Center path is clear")
+            elif 'immediate_left' in clear_zones:
+                if 'immediate_far_left' in clear_zones:
+                    advice.append("Move left - wide left path available")
+                else:
+                    advice.append("Move slightly left")
+            elif 'immediate_right' in clear_zones:
+                if 'immediate_far_right' in clear_zones:
+                    advice.append("Move right - wide right path available")
+                else:
+                    advice.append("Move slightly right")
+            elif 'immediate_far_left' in clear_zones:
+                advice.append("Move far left to avoid obstacles")
+            elif 'immediate_far_right' in clear_zones:
+                advice.append("Move far right to avoid obstacles")
+        
+        # Check medium distance zones for advanced planning
+        mid_zones_blocked = []
+        for zone in ['mid_left', 'mid_center', 'mid_right']:
+            if zone in analysis['objects_by_zone'] and analysis['objects_by_zone'][zone]:
+                mid_zones_blocked.append(zone)
+        
+        if mid_zones_blocked and not blocked_zones:  # Clear immediate but blocked ahead
+            advice.append("Obstacles ahead at medium distance - plan your path")
         
         return advice
     
     def _generate_warnings(self, analysis: Dict) -> List[str]:
-        """Generate safety warnings."""
+        """Generate enhanced safety warnings based on 5x3 grid analysis."""
         warnings = []
         
-        # Critical zone warnings
+        # Critical zone warnings (immediate center - directly ahead)
         critical_objects = analysis['objects_by_zone'].get('immediate_center', [])
         if critical_objects:
             warnings.append("CAUTION: Obstacle directly ahead")
         
-        # Multiple object warning
-        total_immediate = sum(len(analysis['objects_by_zone'].get(zone, [])) 
-                            for zone in ['immediate_left', 'immediate_center', 'immediate_right'])
+        # High priority zone warnings (immediate left/right)
+        immediate_side_zones = ['immediate_left', 'immediate_right']
+        for zone in immediate_side_zones:
+            objects = analysis['objects_by_zone'].get(zone, [])
+            if objects:
+                zone_desc = self.zones[zone]['description']
+                warnings.append(f"WARNING: Objects {zone_desc}")
+        
+        # Multiple object warnings with enhanced granularity
+        immediate_zones = ['immediate_far_left', 'immediate_left', 'immediate_center', 'immediate_right', 'immediate_far_right']
+        total_immediate = sum(len(analysis['objects_by_zone'].get(zone, [])) for zone in immediate_zones)
+        
+        if total_immediate >= 4:
+            warnings.append("DANGER: Multiple obstacles in immediate area")
+        elif total_immediate >= 2:
+            warnings.append("Multiple obstacles detected nearby")
+        
+        # Narrow passage detection
+        center_blocked = bool(analysis['objects_by_zone'].get('immediate_center', []))
+        left_blocked = bool(analysis['objects_by_zone'].get('immediate_left', []))
+        right_blocked = bool(analysis['objects_by_zone'].get('immediate_right', []))
+        
+        # Check for narrow passages
+        if center_blocked and (left_blocked or right_blocked):
+            if left_blocked and right_blocked:
+                warnings.append("BLOCKED: No clear path ahead")
+            elif left_blocked:
+                warnings.append("Narrow passage: Only right side available")
+            elif right_blocked:
+                warnings.append("Narrow passage: Only left side available")
+        
+        # Far zone early warnings for planning
+        far_center_objects = analysis['objects_by_zone'].get('far_center', [])
+        if far_center_objects and not critical_objects:
+            warnings.append("Obstacle approaching ahead - prepare to navigate")
+        
+        # Edge zone warnings (far left/right)
+        edge_zones = ['immediate_far_left', 'immediate_far_right']
+        for zone in edge_zones:
+            objects = analysis['objects_by_zone'].get(zone, [])
+            if objects:
+                zone_desc = self.zones[zone]['description']
+                warnings.append(f"Edge obstacle: {zone_desc}")
+        
+        return warnings
         if total_immediate >= 3:
             warnings.append("Multiple obstacles detected nearby")
         
@@ -268,6 +392,8 @@ class NavigationAssistant:
     
     def provide_audio_feedback(self, analysis: Dict):
         """Provide audio feedback based on analysis."""
+        print(f"🔊 Providing audio feedback... TTS available: {self.tts_engine is not None}")
+        
         if not self.tts_engine:
             print("🔊 TTS not available, showing text feedback:")
             self._print_feedback(analysis)
@@ -279,48 +405,48 @@ class NavigationAssistant:
         # Add warnings
         for warning in analysis['warnings']:
             messages.append(warning)
+            print(f"   Added warning: {warning}")
         
         # Add navigation advice (limit to avoid overwhelm)
-        for advice in analysis['navigation_advice'][:2]:  # Limit to 2 pieces of advice
+        for advice in analysis['navigation_advice'][:1]:  # Only 1 piece of advice at a time
             if not any(warning.lower() in advice.lower() for warning in analysis['warnings']):
                 messages.append(advice)
+                print(f"   Added advice: {advice}")
         
-        # Speak messages
-        for message in messages:
-            self._speak_message(message)
+        print(f"🔊 Total messages to speak: {len(messages)}")
+        
+        # Speak only the most important message to avoid overwhelming
+        if messages:
+            most_important = messages[0]  # Warnings are added first, so they take priority
+            print(f"🔊 Speaking most important message: {most_important}")
+            self._speak_message(most_important)
     
     def _speak_message(self, message: str):
-        """Speak a message using TTS."""
+        """Speak a message using TTS with simple blocking approach for reliability."""
         current_time = time.time()
         
         # Check cooldown to avoid spam
         if message in self.last_announcement_time:
-            if current_time - self.last_announcement_time[message] < self.announcement_cooldown:
+            if current_time - self.last_announcement_time[message] < 1.5:  # Shorter cooldown
                 return
         
         self.last_announcement_time[message] = current_time
         
         print(f"🔊 Speaking: {message}")  # Debug output
         
-        if self.tts_engine and not self.is_speaking:
-            self.is_speaking = True
+        if self.tts_engine:
             try:
-                # Clear any pending speech
-                self.tts_engine.stop()
-                
-                # Speak the message
+                # Simple, reliable approach
                 self.tts_engine.say(message)
                 self.tts_engine.runAndWait()
-                
                 print(f"✅ Spoke: {message}")  # Debug confirmation
+                
             except Exception as e:
                 print(f"❌ TTS error: {e}")
                 # Fallback to console output
                 print(f"📢 AUDIO: {message}")
-            finally:
-                self.is_speaking = False
         else:
-            # Fallback to console output when TTS is busy or unavailable
+            # Fallback to console output when TTS is unavailable
             print(f"📢 AUDIO: {message}")
     
     def _print_feedback(self, analysis: Dict):
@@ -426,6 +552,13 @@ class BlindNavigationApp(ObjectDetectionApp):
         
         # Navigation analysis
         navigation_analysis = self.navigation_assistant.analyze_scene(detection_result)
+        
+        # Debug: Log navigation analysis
+        if navigation_analysis['total_objects'] > 0:
+            print(f"🎯 Navigation Analysis: {navigation_analysis['total_objects']} objects detected")
+            print(f"   Zones with objects: {len(navigation_analysis['zone_analysis'])}")
+            for zone, info in navigation_analysis['zone_analysis'].items():
+                print(f"   {zone}: {info['object_count']} objects ({info['priority']} priority)")
         
         # Provide audio feedback
         self.navigation_assistant.provide_audio_feedback(navigation_analysis)

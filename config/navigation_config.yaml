@@ -42,28 +42,44 @@ display:
 
 # Navigation-specific settings
 navigation:
+  # Enhanced grid system for better accuracy
+  grid:
+    columns: 5                         # 5 columns for precise horizontal positioning
+    rows: 3                           # 3 rows for distance-based navigation
+    
   # Audio feedback settings
   audio:
-    announcement_cooldown: 3.0    # Seconds between same announcements
-    speech_rate: 180              # Words per minute
-    volume: 0.9                   # Volume level (0.0 to 1.0)
+    announcement_cooldown: 2.5        # Reduced cooldown for more responsive feedback
+    speech_rate: 180                  # Words per minute
+    volume: 1.0                       # Maximum volume for better hearing
+    detailed_zones: true              # Announce specific zone names
     
   # Zone configuration
   zones:
-    immediate_priority: "critical"  # Priority for immediate zones
-    far_priority: "medium"         # Priority for distant zones
+    immediate_priority: "critical"    # Priority for immediate zones (closest row)
+    mid_priority: "high"             # Priority for medium distance zones  
+    far_priority: "medium"           # Priority for distant zones
+    edge_priority: "medium"          # Priority for edge zones (far left/right)
     
-  # Object categories for navigation
+  # Enhanced safety distances (in pixels) for 5x3 grid
+  safety_distances:
+    critical: 80     # Very close objects (immediate zones)
+    warning: 150     # Moderately close objects (mid zones)
+    caution: 250     # Distant but notable objects (far zones)
+    edge_buffer: 50  # Buffer for edge detection
+
+  # Object categories for enhanced navigation
   object_categories:
     obstacles: ["chair", "table", "person", "car", "bicycle", "box"]
     landmarks: ["door", "window", "stairs", "elevator", "sign"]
     hazards: ["hole", "step", "barrier", "pole", "fire", "water"]
     
-  # Safety distances (in pixels)
-  safety_distances:
-    critical: 100    # Very close objects
-    warning: 200     # Moderately close objects
-    caution: 300     # Distant but notable objects
+  # Enhanced movement guidance
+  movement:
+    precision_mode: true            # Use precise zone-based instructions
+    announce_clear_paths: true      # Announce available clear paths
+    early_warning: true            # Warn about approaching obstacles
+    edge_detection: true           # Detect edge/boundary obstacles
 
 # Accessibility features
 accessibility:
