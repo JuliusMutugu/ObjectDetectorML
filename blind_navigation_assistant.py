@@ -391,7 +391,11 @@ class NavigationAssistant:
         return warnings
     
     def provide_audio_feedback(self, analysis: Dict):
-        """Provide audio feedback based on analysis."""
+        """Provide audio feedback based on analysis with improved message variety."""
+        # Skip audio feedback if no objects detected (reduces "Path ahead is clear" spam)
+        if analysis['total_objects'] == 0:
+            return
+        
         print(f"🔊 Providing audio feedback... TTS available: {self.tts_engine is not None}")
         
         if not self.tts_engine:
@@ -402,16 +406,20 @@ class NavigationAssistant:
         # Priority: Warnings first, then advice
         messages = []
         
-        # Add warnings
+        # Add warnings (these are most important)
         for warning in analysis['warnings']:
             messages.append(warning)
             print(f"   Added warning: {warning}")
         
-        # Add navigation advice (limit to avoid overwhelm)
-        for advice in analysis['navigation_advice'][:1]:  # Only 1 piece of advice at a time
-            if not any(warning.lower() in advice.lower() for warning in analysis['warnings']):
-                messages.append(advice)
-                print(f"   Added advice: {advice}")
+        # Add navigation advice only if there are warnings or important objects
+        immediate_zones = ['immediate_left', 'immediate_center', 'immediate_right', 'immediate_far_left', 'immediate_far_right']
+        has_immediate_objects = any(zone in analysis['zone_analysis'] for zone in immediate_zones)
+        
+        if has_immediate_objects or len(analysis['warnings']) > 0:
+            for advice in analysis['navigation_advice'][:1]:  # Only 1 piece of advice at a time
+                if not any(warning.lower() in advice.lower() for warning in analysis['warnings']):
+                    messages.append(advice)
+                    print(f"   Added advice: {advice}")
         
         print(f"🔊 Total messages to speak: {len(messages)}")
         
@@ -422,12 +430,22 @@ class NavigationAssistant:
             self._speak_message(most_important)
     
     def _speak_message(self, message: str):
-        """Speak a message using TTS with simple blocking approach for reliability."""
+        """Speak a message using TTS with improved cooldown management."""
         current_time = time.time()
+        
+        # Different cooldown times based on message importance
+        if "CAUTION" in message or "DANGER" in message:
+            cooldown = 0.8  # Critical messages - short cooldown
+        elif "WARNING" in message:
+            cooldown = 1.0  # Important warnings - medium cooldown
+        elif "Path ahead is clear" in message:
+            cooldown = 3.0  # Path clear messages - longer cooldown to reduce repetition
+        else:
+            cooldown = 1.5  # Other messages - standard cooldown
         
         # Check cooldown to avoid spam
         if message in self.last_announcement_time:
-            if current_time - self.last_announcement_time[message] < 1.5:  # Shorter cooldown
+            if current_time - self.last_announcement_time[message] < cooldown:
                 return
         
         self.last_announcement_time[message] = current_time
