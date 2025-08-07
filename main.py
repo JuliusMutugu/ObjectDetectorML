@@ -10,6 +10,7 @@ from typing import List, Optional
 from camera import CameraInterface, OpenCVCamera
 from detection import DetectorInterface, ContourDetector
 from color import ColorAnalyzerInterface, HSVColorAnalyzer
+from shape import ShapeAnalyzerInterface, GeometricShapeAnalyzer
 from models import DetectedObject, DetectionResult
 from config import ConfigManager
 
@@ -26,6 +27,7 @@ class ObjectDetectionApp:
                  camera: Optional[CameraInterface] = None,
                  detector: Optional[DetectorInterface] = None,
                  color_analyzer: Optional[ColorAnalyzerInterface] = None,
+                 shape_analyzer: Optional[ShapeAnalyzerInterface] = None,
                  config_manager: Optional[ConfigManager] = None):
         """
         Initialize the object detection application.
@@ -34,6 +36,7 @@ class ObjectDetectionApp:
             camera: Camera interface implementation
             detector: Object detector implementation
             color_analyzer: Color analyzer implementation
+            shape_analyzer: Shape analyzer implementation
             config_manager: Configuration manager
         """
         # Initialize configuration manager
@@ -47,6 +50,7 @@ class ObjectDetectionApp:
         self.camera = camera or self._create_default_camera()
         self.detector = detector or self._create_default_detector()
         self.color_analyzer = color_analyzer or self._create_default_color_analyzer()
+        self.shape_analyzer = shape_analyzer or self._create_default_shape_analyzer()
         
         # Application state
         self.is_running = False
@@ -127,9 +131,10 @@ class ObjectDetectionApp:
         # Detect objects
         detected_objects = self.detector.detect_objects(frame)
         
-        # Analyze colors for each detected object
+        # Analyze colors and shapes for each detected object
         for obj in detected_objects:
             obj.color = self.color_analyzer.analyze_color(frame, obj)
+            obj.shape = self.shape_analyzer.analyze_shape(obj)
         
         # Create detection result
         detection_result = DetectionResult(
@@ -163,6 +168,7 @@ class ObjectDetectionApp:
         show_contours = self.display_config.get('show_contours', True)
         show_bboxes = self.display_config.get('show_bounding_boxes', True)
         show_labels = self.display_config.get('show_color_labels', True)
+        show_shapes = self.display_config.get('show_shape_labels', True)
         font_scale = self.display_config.get('font_scale', 0.7)
         thickness = self.display_config.get('line_thickness', 2)
         
@@ -179,21 +185,29 @@ class ObjectDetectionApp:
                             (bbox.x + bbox.width, bbox.y + bbox.height),
                             (255, 0, 0), thickness)
             
-            # Draw color label
+            # Prepare labels
+            labels = []
             if show_labels and obj.color:
-                label = f"{obj.color.name} ({obj.color.confidence:.2f})"
-                label_pos = (obj.bounding_box.x, obj.bounding_box.y - 10)
-                
-                # Draw text background
-                text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
-                cv2.rectangle(frame,
-                            (label_pos[0], label_pos[1] - text_size[1] - 5),
-                            (label_pos[0] + text_size[0], label_pos[1] + 5),
-                            (0, 0, 0), -1)
-                
-                # Draw text
-                cv2.putText(frame, label, label_pos,
-                          cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+                labels.append(f"{obj.color.name} ({obj.color.confidence:.2f})")
+            if show_shapes and obj.shape:
+                labels.append(f"{obj.shape.name} ({obj.shape.confidence:.2f})")
+            
+            # Draw labels
+            if labels:
+                y_offset = obj.bounding_box.y - 10
+                for i, label in enumerate(labels):
+                    label_pos = (obj.bounding_box.x, y_offset - (i * 25))
+                    
+                    # Draw text background
+                    text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)[0]
+                    cv2.rectangle(frame,
+                                (label_pos[0], label_pos[1] - text_size[1] - 5),
+                                (label_pos[0] + text_size[0], label_pos[1] + 5),
+                                (0, 0, 0), -1)
+                    
+                    # Draw text
+                    cv2.putText(frame, label, label_pos,
+                              cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
         
         # Draw statistics
         self._draw_statistics(frame, detection_result)
@@ -262,6 +276,10 @@ class ObjectDetectionApp:
     def _create_default_color_analyzer(self) -> ColorAnalyzerInterface:
         """Create default color analyzer implementation."""
         return HSVColorAnalyzer()
+    
+    def _create_default_shape_analyzer(self) -> ShapeAnalyzerInterface:
+        """Create default shape analyzer implementation."""
+        return GeometricShapeAnalyzer()
 
 
 def main():

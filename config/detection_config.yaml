@@ -28,9 +28,10 @@ camera:
 
 # Display configuration
 display:
-  window_name: "Object Color Detector"
+  window_name: "Object Color & Shape Detector"
   show_contours: true    # Show object contours
   show_bounding_boxes: true  # Show bounding boxes
   show_color_labels: true    # Show color labels
-  font_scale: 0.7        # Text font scale
+  show_shape_labels: true    # Show shape labels
+  font_scale: 0.6        # Text font scale (reduced for multiple labels)
   line_thickness: 2      # Line thickness for drawings

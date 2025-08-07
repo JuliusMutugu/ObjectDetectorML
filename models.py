@@ -51,11 +51,22 @@ class Color:
 
 
 @dataclass
+class Shape:
+    """Represents a detected shape with its properties."""
+    name: str
+    confidence: float = 1.0
+    vertices: int = 0
+    area_ratio: float = 0.0  # Ratio of contour area to bounding box area
+    aspect_ratio: float = 0.0  # Width to height ratio
+
+
+@dataclass
 class DetectedObject:
     """Represents a detected object with its properties."""
     bounding_box: BoundingBox
     contour: np.ndarray
     color: Optional[Color] = None
+    shape: Optional[Shape] = None
     confidence: float = 1.0
     object_id: Optional[int] = None
     

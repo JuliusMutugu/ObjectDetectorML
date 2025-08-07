@@ -124,7 +124,7 @@ class HSVColorAnalyzer(ColorAnalyzerInterface):
     
     def _find_dominant_color(self, hsv_roi: np.ndarray) -> Color:
         """
-        Find the dominant color in the HSV ROI.
+        Find the dominant color in the HSV ROI with improved accuracy.
         
         Args:
             hsv_roi: HSV region of interest
@@ -132,18 +132,33 @@ class HSVColorAnalyzer(ColorAnalyzerInterface):
         Returns:
             Color: Dominant color information
         """
+        if hsv_roi.size == 0:
+            return Color(128, 128, 128, "unknown", 0.0)
+        
+        # Apply noise reduction
+        hsv_roi_filtered = cv2.medianBlur(hsv_roi, 5)
+        
+        # Calculate histogram for better color analysis
+        hist_h = cv2.calcHist([hsv_roi_filtered], [0], None, [180], [0, 180])
+        hist_s = cv2.calcHist([hsv_roi_filtered], [1], None, [256], [0, 256])
+        hist_v = cv2.calcHist([hsv_roi_filtered], [2], None, [256], [0, 256])
+        
+        # Get dominant hue
+        dominant_hue = np.argmax(hist_h)
+        
         best_match = None
         best_confidence = 0
         best_color_name = "unknown"
+        color_scores = {}
         
         for color_name, (lower, upper) in self.color_ranges.items():
             # Create mask for this color range
-            mask = cv2.inRange(hsv_roi, np.array(lower), np.array(upper))
+            mask = cv2.inRange(hsv_roi_filtered, np.array(lower), np.array(upper))
             
             # Calculate the percentage of pixels matching this color
             pixel_count = cv2.countNonZero(mask)
-            total_pixels = hsv_roi.shape[0] * hsv_roi.shape[1]
-            confidence = pixel_count / total_pixels if total_pixels > 0 else 0
+            total_pixels = hsv_roi_filtered.shape[0] * hsv_roi_filtered.shape[1]
+            base_confidence = pixel_count / total_pixels if total_pixels > 0 else 0
             
             # Special handling for red (which has two ranges in HSV)
             if color_name == 'red2' and 'red' in self.color_ranges:
@@ -153,14 +168,51 @@ class HSVColorAnalyzer(ColorAnalyzerInterface):
                 # Also check the second red range
                 if 'red2' in self.color_ranges:
                     lower2, upper2 = self.color_ranges['red2']
-                    mask2 = cv2.inRange(hsv_roi, np.array(lower2), np.array(upper2))
+                    mask2 = cv2.inRange(hsv_roi_filtered, np.array(lower2), np.array(upper2))
                     pixel_count += cv2.countNonZero(mask2)
-                    confidence = pixel_count / total_pixels if total_pixels > 0 else 0
+                    base_confidence = pixel_count / total_pixels if total_pixels > 0 else 0
             
-            if confidence > best_confidence:
-                best_confidence = confidence
+            # Apply histogram-based confidence boost
+            hue_range = range(lower[0], upper[0] + 1)
+            if dominant_hue in hue_range:
+                base_confidence *= 1.2  # Boost confidence if dominant hue matches
+            
+            # Consider saturation and value for better detection
+            mean_s = np.mean(hsv_roi_filtered[:, :, 1])
+            mean_v = np.mean(hsv_roi_filtered[:, :, 2])
+            
+            # Adjust confidence based on saturation and brightness
+            if mean_s > 50 and mean_v > 50:  # Good color conditions
+                base_confidence *= 1.1
+            elif mean_s < 30:  # Low saturation (grayish)
+                if color_name in ['white', 'black', 'gray']:
+                    base_confidence *= 1.2
+                else:
+                    base_confidence *= 0.8
+            elif mean_v < 50:  # Low brightness
+                if color_name == 'black':
+                    base_confidence *= 1.3
+                else:
+                    base_confidence *= 0.9
+            elif mean_v > 200:  # High brightness
+                if color_name == 'white':
+                    base_confidence *= 1.3
+                else:
+                    base_confidence *= 0.9
+            
+            color_scores[color_name] = base_confidence
+            
+            if base_confidence > best_confidence:
+                best_confidence = base_confidence
                 best_color_name = color_name
                 best_match = mask
+        
+        # Additional validation: check if confidence is too low
+        if best_confidence < 0.1:
+            # Analyze average color if no clear match
+            mean_hsv = self.get_average_color_in_roi(hsv_roi_filtered)
+            best_color_name = self._classify_by_average_hsv(mean_hsv)
+            best_confidence = 0.5  # Medium confidence for average-based classification
         
         # Get RGB values for the detected color
         if best_color_name in self.color_rgb:
@@ -173,7 +225,7 @@ class HSVColorAnalyzer(ColorAnalyzerInterface):
             g=g,
             b=b,
             name=best_color_name,
-            confidence=best_confidence
+            confidence=min(best_confidence, 1.0)  # Cap at 1.0
         )
     
     def get_average_color_in_roi(self, hsv_roi: np.ndarray) -> Tuple[int, int, int]:
@@ -192,3 +244,44 @@ class HSVColorAnalyzer(ColorAnalyzerInterface):
         # Calculate mean HSV values
         mean_hsv = np.mean(hsv_roi.reshape(-1, 3), axis=0)
         return tuple(mean_hsv.astype(int))
+    
+    def _classify_by_average_hsv(self, hsv_values: Tuple[int, int, int]) -> str:
+        """
+        Classify color based on average HSV values.
+        
+        Args:
+            hsv_values: Average HSV values (H, S, V)
+            
+        Returns:
+            str: Color name
+        """
+        h, s, v = hsv_values
+        
+        # Handle grayscale colors based on saturation and value
+        if s < 30:  # Low saturation - grayscale
+            if v < 50:
+                return "black"
+            elif v > 200:
+                return "white"
+            else:
+                return "gray"
+        
+        # Handle colored objects based on hue
+        if h <= 10 or h >= 170:
+            return "red"
+        elif 11 <= h <= 25:
+            return "orange"
+        elif 26 <= h <= 35:
+            return "yellow"
+        elif 36 <= h <= 85:
+            return "green"
+        elif 86 <= h <= 95:
+            return "cyan"
+        elif 96 <= h <= 125:
+            return "blue"
+        elif 126 <= h <= 145:
+            return "purple"
+        elif 146 <= h <= 169:
+            return "pink"
+        else:
+            return "unknown"

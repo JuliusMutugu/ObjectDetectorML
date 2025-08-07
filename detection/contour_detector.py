@@ -105,23 +105,26 @@ class ContourDetector(DetectorInterface):
         Returns:
             np.ndarray: Preprocessed image
         """
-        # Convert to grayscale first
+        # Convert to grayscale
         gray = self.image_processor.convert_to_gray(image)
         
         # Apply Gaussian blur to reduce noise
         blurred = self.image_processor.apply_gaussian_blur(gray, self.blur_kernel_size)
         
-        # Use Canny edge detection instead of adaptive threshold for better results
-        edges = cv2.Canny(blurred, 50, 150)
+        # Use simple binary threshold for clear separation
+        _, binary = cv2.threshold(blurred, 127, 255, cv2.THRESH_BINARY)
         
-        # Apply morphological operations to close gaps
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_kernel_size, self.morph_kernel_size))
-        closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+        # For colored objects on white background, invert the binary image
+        # This ensures objects are white (255) and background is black (0)
+        mean_val = np.mean(binary)
+        if mean_val > 127:  # Mostly white background
+            binary = cv2.bitwise_not(binary)
         
-        # Fill holes
-        filled = cv2.morphologyEx(closed, cv2.MORPH_CLOSE, kernel, iterations=2)
+        # Light morphological operations to clean up small noise
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        cleaned = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
         
-        return filled
+        return cleaned
     
     def _find_contours(self, processed_image: np.ndarray) -> List[np.ndarray]:
         """
